@@ -26,7 +26,8 @@
         "deep-equal" : "0.0.x"
     },
     "devDependencies" : {
-        "tap" : "0.1.x"
+        "tap" : "0.1.x",
+        "ent" : "0.0.x"
     },
     "engines" : {
         "node" : ">=0.4.0"
