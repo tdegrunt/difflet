@@ -71,7 +71,11 @@ function difflet (opts, prev, next) {
             this.before(function () {
                 if (inserted) set('inserted');
                 if (indent && commaFirst) {
-                    write('\n' + indentx + '[ ');
+                    if ((this.path || []).length === 0
+                    || Array.isArray(this.parent.node)) {
+                        write('[ ');
+                    }
+                    else write('\n' + indentx + '[ ');
                 }
                 else if (indent) {
                     write('[\n' + indentx);
