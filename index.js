@@ -123,9 +123,18 @@ function difflet (opts, prev, next) {
         else if (typeof node === 'object'
         && node && typeof node.inspect === 'function') {
             this.block();
-            if (inserted) set('inserted');
-            write(node.inspect());
-            if (inserted) unset('inserted');
+            if (inserted) {
+                set('inserted');
+                write(node.inspect());
+                unset('inserted');
+            }
+            else if (!(prevNode && typeof prevNode.inspect === 'function'
+            && prevNode.inspect() === node.inspect())) {
+                set('updated');
+                write(node.inspect());
+                unset('updated');
+            }
+            else write(node.inspect());
         }
         else if (typeof node == 'object') {
             var insertedKey = false;
