@@ -59,7 +59,13 @@ module.exports = function (prev, next) {
         }
         else if (typeof node == 'object') {
             var insertedKey = false;
-            
+            var deleted = typeof prevNode === 'object'
+                ? Object.keys(prevNode).filter(function (key) {
+                    return !Object.hasOwnProperty.call(node, key);
+                })
+                : []
+            ;
+                    
             this.before(function () {
                 if (inserted) set('green');
                 c.write('{');
@@ -76,25 +82,28 @@ module.exports = function (prev, next) {
             });
             
             this.post(function (child) {
-                if (!child.isLast) c.write(',');
-                if (insertedKey) unset();
+                if (child.isLast && deleted.length) {
+                    if (insertedKey) unset();
+                    c.write(',');
+                }
+                else {
+                    if (!child.isLast) c.write(',');
+                    if (insertedKey) unset();
+                }
             });
             
             this.after(function () {
                 if (inserted) unset();
                 
-                /*
-                var deleted = traverse.get(prev, this.path || []);
-                if (typeof deleted === 'object') {
-                }
-                
-                if (deleted !== undefined) {
+                if (deleted.length) {
                     set('red');
-                    console.dir(deleted);
-                    traverse(deleted).forEach(plainStringify);
+                    deleted.forEach(function (key) {
+                        plainStringify(key);
+                        c.write(':');
+                        plainStringify(prevNode[key]);
+                    });
                     unset();
                 }
-                */
                 
                 c.write('}');
             });
