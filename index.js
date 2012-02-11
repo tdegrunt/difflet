@@ -65,6 +65,7 @@ function difflet (opts, prev, next) {
         var indentx = indent && Array(
             ((this.path || []).length + 1) * indent + 1
         ).join(' ');
+        if (commaFirst) indentx = indentx.slice(indent);
         
         if (Array.isArray(node)) {
             this.before(function () {
@@ -129,7 +130,8 @@ function difflet (opts, prev, next) {
                         set('inserted');
                     }
                 }
-                if (indent) write('\n' + indentx);
+                
+                if (indent && !commaFirst) write('\n' + indentx);
                 
                 plainStringify(key);
                 write(indent ? ' : ' : ':');
@@ -139,11 +141,18 @@ function difflet (opts, prev, next) {
                 if (child.isLast && deleted.length) {
                     if (insertedKey) unset('inserted');
                     
-                    if (indent && commaFirst) write(indentx + '\n,')
+                    if (indent && commaFirst) {
+                        write(indentx + '\n,')
+                    }
                     else if (indent) write(',\n' + indentx)
                 }
                 else {
-                    if (!child.isLast) write(',');
+                    if (!child.isLast) {
+                        if (indent && commaFirst) {
+                            write('\n' + indentx + ', ');
+                        }
+                        else write(',');
+                    }
                     if (insertedKey) unset('inserted');
                 }
             });
