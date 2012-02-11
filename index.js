@@ -105,6 +105,21 @@ function difflet (opts, prev, next) {
                 if (inserted) unset('inserted');
             });
         }
+        else if (isRegExp(node)) {
+            this.block();
+            
+            if (inserted) {
+                set('inserted');
+                write(node.toString());
+                unset('inserted');
+            }
+            else if (insertable && prevNode !== node) {
+                set('updated');
+                write(node.toString());
+                unset('updated');
+            }
+            else write(node.toString());
+        }
         else if (typeof node === 'object'
         && node && typeof node.inspect === 'function') {
             this.block();
