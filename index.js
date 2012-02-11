@@ -31,6 +31,8 @@ function difflet (opts, prev, next) {
     var write = opts.write || function (buf) {
         stream.write(buf);
     };
+    var commaFirst = opts.comma === 'first';
+    var indent = opts.indent;
     
     process.nextTick(function () {
         traverse(next).forEach(stringify);
@@ -51,17 +53,40 @@ function difflet (opts, prev, next) {
         var prevNode = traverse.get(prev, this.path || []);
         var inserted = prevNode === undefined;
         
+        var indentx = indent && Array(
+            ((this.path || []).length + 1) * indent + 1
+        ).join(' ');
+        
         if (Array.isArray(node)) {
             this.before(function () {
                 if (inserted) set('inserted');
-                write('[');
+                if (indent && commaFirst) {
+                    write('\n' + indentx + '[ ');
+                }
+                else if (indent) {
+                    write('[\n' + indentx);
+                }
+                else {
+                    write('[');
+                }
             });
             
             this.post(function (child) {
-                if (!child.isLast) write(',');
+                if (!child.isLast) {
+                    if (indent && commaFirst) {
+                        write('\n' + indentx + ', ');
+                    }
+                    else if (indent) {
+                        write(',\n' + indentx);
+                    }
+                    else write(',');
+                }
             });
             
             this.after(function () {
+                if (indent && commaFirst) write('\n' + indentx);
+                else write('\n' + indentx.slice(indent));
+                
                 write(']');
                 if (inserted) unset('inserted');
             });
@@ -93,14 +118,18 @@ function difflet (opts, prev, next) {
                     insertedKey = true;
                     set('inserted');
                 }
+                if (indent) write('\n' + indentx);
+                
                 plainStringify(key);
-                write(':');
+                write(indent ? ' : ' : ':');
             });
             
             this.post(function (child) {
                 if (child.isLast && deleted.length) {
                     if (insertedKey) unset('inserted');
-                    write(',');
+                    
+                    if (indent && commaFirst) write(indentx + '\n,')
+                    else if (indent) write(',\n' + indentx)
                 }
                 else {
                     if (!child.isLast) write(',');
@@ -121,7 +150,13 @@ function difflet (opts, prev, next) {
                     unset('deleted');
                 }
                 
-                write('}');
+                if (commaFirst && indent) {
+                    write(indentx.slice(indent) + '}');
+                }
+                else if (indent) {
+                    write(indentx + '\n}');
+                }
+                else write('}');
             });
         }
         else {
@@ -157,7 +192,9 @@ function difflet (opts, prev, next) {
     
     function plainStringify (node) {
         if (Array.isArray(node)) {
-            this.before(function () { write('[') });
+            this.before(function () {
+                write('[');
+            });
             
             this.post(function (child) {
                 if (!child.isLast) write(',');
