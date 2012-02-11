@@ -99,7 +99,7 @@ function difflet (opts, prev, next) {
             
             this.after(function () {
                 if (indent && commaFirst) write('\n' + indentx);
-                else write('\n' + indentx.slice(indent));
+                else if (indent) write('\n' + indentx.slice(indent));
                 
                 write(']');
                 if (inserted) unset('inserted');
@@ -221,7 +221,7 @@ function difflet (opts, prev, next) {
             }
             
             if (inserted) unset('inserted');
-            else if (changed) unset('changed');
+            else if (changed) unset('updated');
         }
     }
     
