@@ -120,7 +120,7 @@ function difflet (opts, prev, next) {
                 })
                 : []
             ;
-                    
+            
             this.before(function () {
                 if (inserted) set('inserted');
                 write(indent && commaFirst ? '{ ' : '{');
@@ -144,6 +144,7 @@ function difflet (opts, prev, next) {
             this.post(function (child) {
                 if (child.isLast && deleted.length) {
                     if (insertedKey) unset('inserted');
+                    insertedKey = false;
                     
                     if (indent && commaFirst) {
                         write(indentx + '\n, ')
@@ -158,6 +159,7 @@ function difflet (opts, prev, next) {
                         else write(',');
                     }
                     if (insertedKey) unset('inserted');
+                    insertedKey = false;
                 }
             });
             
@@ -189,7 +191,7 @@ function difflet (opts, prev, next) {
                     write(indentx.slice(indent) + ' }');
                 }
                 else if (indent) {
-                    write(indentx + '\n}');
+                    write('\n' + indentx.slice(indent) + '}');
                 }
                 else write('}');
             });
