@@ -217,8 +217,7 @@ function difflet (opts, prev, next) {
             if (typeof node === 'string') {
                 write('"' + node.toString().replace(/"/g, '\\"') + '"');
             }
-            else if (node instanceof RegExp
-            || (typeof node === 'function' && node.name === undefined)) {
+            else if (isRegExp(node)) {
                 write(node.toString());
             }
             else if (typeof node === 'function') {
@@ -237,4 +236,13 @@ function difflet (opts, prev, next) {
     }
     
     return stream;
+}
+
+function isRegExp (node) {
+    return node instanceof RegExp || (node
+        && typeof node.test === 'function' 
+        && typeof node.exec === 'function'
+        && typeof node.compile === 'function'
+        && node.constructor && node.constructor.name === 'RegExp'
+    );
 }
