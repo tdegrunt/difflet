@@ -223,8 +223,8 @@ function difflet (opts, prev, next) {
             }
             else if (typeof node === 'function') {
                 write(node.name
-                    ? '[Function]'
-                    : '[Function: ' + node.name + ']'
+                    ? '[Function: ' + node.name + ']'
+                    : '[Function]'
                 );
             }
             else {
