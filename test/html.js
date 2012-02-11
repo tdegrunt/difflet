@@ -33,7 +33,7 @@ test('html output', function (t) {
         t.equal(data,
             '{"a":[1,2,3,<g>[4]</g>,<g>"z"</g>,<g>/beep/</g>,<g>'
             + '<Buffer 00 01 02></g>],"fn":<b>8</b>,'
-            + '<g>"b":[5,6,7]</g><r>"yy":6,"zz":5</r>}'
+            + '<g>"b":[5,6,7]</g>,<r>"yy":6,"zz":5</r>}'
         );
         t.end();
     });
