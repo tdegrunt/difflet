@@ -16,12 +16,14 @@ module.exports = function (prev, next) {
         stream.emit('end');
     });
     
+    var levels = 0;
     function set (color) {
         c.foreground(color);
+        levels ++;
     }
     
     function unset () {
-        c.display('reset');
+        if (--levels === 0) c.display('reset');
     }
     
     function stringify (node) {
