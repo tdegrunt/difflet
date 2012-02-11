@@ -1,6 +1,7 @@
 var traverse = require('traverse');
 var Stream = require('stream').Stream;
 var charm = require('charm');
+var deepEqual = require('deep-equal');
 
 module.exports = function (prev, next) {
     var stream = new Stream;
@@ -26,15 +27,15 @@ module.exports = function (prev, next) {
         if (--levels === 0) c.display('reset');
     }
     
+    function equals () {
+        
+    }
+    
     function stringify (node) {
-        var inserted = this.path
-            ? traverse.get(prev, this.path) === undefined
-            : false
-        ;
+        var prevNode = traverse.get(prev, this.path || []);
+        var inserted = prevNode === undefined;
         
         if (Array.isArray(node)) {
-            var insertedElem = false;
-            
             this.before(function () {
                 if (inserted) set('green');
                 c.write('[');
@@ -65,11 +66,12 @@ module.exports = function (prev, next) {
             });
             
             this.pre(function (x, key) {
-                if (traverse.get(prev, this.path.concat(key)) === undefined) {
+                var obj = traverse.get(prev, this.path.concat(key));
+                if (obj === undefined) {
                     insertedKey = true;
                     set('green');
                 }
-                stringify(key);
+                plainStringify(key);
                 c.write(':');
             });
             
@@ -80,11 +82,31 @@ module.exports = function (prev, next) {
             
             this.after(function () {
                 if (inserted) unset();
+                
+                /*
+                var deleted = traverse.get(prev, this.path || []);
+                if (typeof deleted === 'object') {
+                }
+                
+                if (deleted !== undefined) {
+                    set('red');
+                    console.dir(deleted);
+                    traverse(deleted).forEach(plainStringify);
+                    unset();
+                }
+                */
+                
                 c.write('}');
             });
         }
         else {
+            var changed = false;
+            
             if (inserted) set('green');
+            else if (!deepEqual(prevNode, node)) {
+                changed = true;
+                set('blue');
+            }
             
             if (typeof node === 'string') {
                 c.write('"' + node.toString().replace(/"/g, '\\"') + '"');
@@ -103,7 +125,54 @@ module.exports = function (prev, next) {
                 c.write(node.toString());
             }
             
-            if (inserted) unset();
+            if (inserted || changed) unset();
+        }
+    }
+    
+    function plainStringify (node) {
+        if (Array.isArray(node)) {
+            this.before(function () { c.write('[') });
+            
+            this.post(function (child) {
+                if (!child.isLast) c.write(',');
+            });
+            
+            this.after(function () { c.write(']') });
+        }
+        else if (typeof node === 'object'
+        && node && typeof node.inspect === 'function') {
+            this.block();
+            c.write(node.inspect());
+        }
+        else if (typeof node == 'object') {
+            this.before(function () { c.write('{') });
+            
+            this.pre(function (x, key) {
+                stringify(key);
+                c.write(':');
+            });
+            
+            this.post(function (child) {
+                if (!child.isLast) c.write(',');
+            });
+            
+            this.after(function () { c.write('}') });
+        }
+        else if (typeof node === 'string') {
+            c.write('"' + node.toString().replace(/"/g, '\\"') + '"');
+        }
+        else if (node instanceof RegExp
+        || (typeof node === 'function' && node.name === undefined)) {
+            c.write(node.toString());
+        }
+        else if (typeof node === 'function') {
+            c.write(node.name
+                ? '[Function]'
+                : '[Function: ' + node.name + ']'
+            );
+        }
+        else {
+            c.write(node.toString());
         }
     }
     
