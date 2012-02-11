@@ -119,7 +119,7 @@ function difflet (opts, prev, next) {
                     
             this.before(function () {
                 if (inserted) set('inserted');
-                write('{');
+                write(indent && commaFirst ? '{ ' : '{');
             });
             
             this.pre(function (x, key) {
@@ -142,7 +142,7 @@ function difflet (opts, prev, next) {
                     if (insertedKey) unset('inserted');
                     
                     if (indent && commaFirst) {
-                        write(indentx + '\n,')
+                        write(indentx + '\n, ')
                     }
                     else if (indent) write(',\n' + indentx)
                 }
@@ -162,16 +162,27 @@ function difflet (opts, prev, next) {
                 
                 if (deleted.length) {
                     set('deleted');
-                    deleted.forEach(function (key) {
+                    deleted.forEach(function (key, ix) {
                         plainStringify(key);
                         write(indent ? ' : ' : ':');
                         plainStringify(prevNode[key]);
+                        
+                        var last = ix === deleted.length - 1;
+                        if (insertable && !last) {
+                            if (indent && commaFirst) {
+                                write('\n' + indentx + ', ');
+                            }
+                            else if (indent) {
+                                write(',\n' + indentx);
+                            }
+                            else write(',');
+                        }
                     });
                     unset('deleted');
                 }
                 
                 if (commaFirst && indent) {
-                    write(indentx.slice(indent) + '}');
+                    write(indentx.slice(indent) + ' }');
                 }
                 else if (indent) {
                     write(indentx + '\n}');
