@@ -3,14 +3,34 @@ var Stream = require('stream').Stream;
 var charm = require('charm');
 var deepEqual = require('deep-equal');
 
-module.exports = function (prev, next) {
+module.exports = function (opts) {
+    return difflet.bind(null, opts);
+};
+
+function difflet (opts, prev, next) {
     var stream = new Stream;
     stream.readable = true;
     stream.writable = true;
     stream.write = function (buf) { this.emit('data', buf) };
     stream.end = function () { this.emit('end') };
     
-    var c = charm(stream);
+    if (!opts) opts = {};
+    if (opts.start === undefined && opts.stop === undefined) {
+        var c = charm(stream);
+        opts.start = function (type) {
+            c.foreground({
+                inserted : 'green',
+                updated : 'blue',
+                deleted : 'red',
+            }[type]);
+        };
+        opts.stop = function (type) {
+            c.display('reset');
+        };
+    }
+    var write = opts.write || function (buf) {
+        stream.write(buf);
+    };
     
     process.nextTick(function () {
         traverse(next).forEach(stringify);
@@ -18,17 +38,13 @@ module.exports = function (prev, next) {
     });
     
     var levels = 0;
-    function set (color) {
-        c.foreground(color);
+    function set (type) {
+        if (levels === 0) opts.start(type, stream);
         levels ++;
     }
     
-    function unset () {
-        if (--levels === 0) c.display('reset');
-    }
-    
-    function equals () {
-        
+    function unset (type) {
+        if (--levels === 0) opts.stop(type, stream);
     }
     
     function stringify (node) {
@@ -37,25 +53,25 @@ module.exports = function (prev, next) {
         
         if (Array.isArray(node)) {
             this.before(function () {
-                if (inserted) set('green');
-                c.write('[');
+                if (inserted) set('inserted');
+                write('[');
             });
             
             this.post(function (child) {
-                if (!child.isLast) c.write(',');
+                if (!child.isLast) write(',');
             });
             
             this.after(function () {
-                c.write(']');
-                if (inserted) unset();
+                write(']');
+                if (inserted) unset('inserted');
             });
         }
         else if (typeof node === 'object'
         && node && typeof node.inspect === 'function') {
             this.block();
-            if (inserted) set('green');
-            c.write(node.inspect());
-            if (inserted) unset();
+            if (inserted) set('inserted');
+            write(node.inspect());
+            if (inserted) unset('inserted');
         }
         else if (typeof node == 'object') {
             var insertedKey = false;
@@ -67,123 +83,124 @@ module.exports = function (prev, next) {
             ;
                     
             this.before(function () {
-                if (inserted) set('green');
-                c.write('{');
+                if (inserted) set('inserted');
+                write('{');
             });
             
             this.pre(function (x, key) {
                 var obj = traverse.get(prev, this.path.concat(key));
                 if (obj === undefined) {
                     insertedKey = true;
-                    set('green');
+                    set('inserted');
                 }
                 plainStringify(key);
-                c.write(':');
+                write(':');
             });
             
             this.post(function (child) {
                 if (child.isLast && deleted.length) {
-                    if (insertedKey) unset();
-                    c.write(',');
+                    if (insertedKey) unset('inserted');
+                    write(',');
                 }
                 else {
-                    if (!child.isLast) c.write(',');
-                    if (insertedKey) unset();
+                    if (!child.isLast) write(',');
+                    if (insertedKey) unset('inserted');
                 }
             });
             
             this.after(function () {
-                if (inserted) unset();
+                if (inserted) unset('inserted');
                 
                 if (deleted.length) {
-                    set('red');
+                    set('deleted');
                     deleted.forEach(function (key) {
                         plainStringify(key);
-                        c.write(':');
+                        write(':');
                         plainStringify(prevNode[key]);
                     });
-                    unset();
+                    unset('deleted');
                 }
                 
-                c.write('}');
+                write('}');
             });
         }
         else {
             var changed = false;
             
-            if (inserted) set('green');
+            if (inserted) set('inserted');
             else if (!deepEqual(prevNode, node)) {
                 changed = true;
-                set('blue');
+                set('updated');
             }
             
             if (typeof node === 'string') {
-                c.write('"' + node.toString().replace(/"/g, '\\"') + '"');
+                write('"' + node.toString().replace(/"/g, '\\"') + '"');
             }
             else if (node instanceof RegExp
             || (typeof node === 'function' && node.name === undefined)) {
-                c.write(node.toString());
+                write(node.toString());
             }
             else if (typeof node === 'function') {
-                c.write(node.name
+                write(node.name
                     ? '[Function]'
                     : '[Function: ' + node.name + ']'
                 );
             }
             else {
-                c.write(node.toString());
+                write(node.toString());
             }
             
-            if (inserted || changed) unset();
+            if (inserted) unset('inserted');
+            else if (changed) unset('changed');
         }
     }
     
     function plainStringify (node) {
         if (Array.isArray(node)) {
-            this.before(function () { c.write('[') });
+            this.before(function () { write('[') });
             
             this.post(function (child) {
-                if (!child.isLast) c.write(',');
+                if (!child.isLast) write(',');
             });
             
-            this.after(function () { c.write(']') });
+            this.after(function () { write(']') });
         }
         else if (typeof node === 'object'
         && node && typeof node.inspect === 'function') {
             this.block();
-            c.write(node.inspect());
+            write(node.inspect());
         }
         else if (typeof node == 'object') {
-            this.before(function () { c.write('{') });
+            this.before(function () { write('{') });
             
             this.pre(function (x, key) {
                 stringify(key);
-                c.write(':');
+                write(':');
             });
             
             this.post(function (child) {
-                if (!child.isLast) c.write(',');
+                if (!child.isLast) write(',');
             });
             
-            this.after(function () { c.write('}') });
+            this.after(function () { write('}') });
         }
         else if (typeof node === 'string') {
-            c.write('"' + node.toString().replace(/"/g, '\\"') + '"');
+            write('"' + node.toString().replace(/"/g, '\\"') + '"');
         }
         else if (node instanceof RegExp
         || (typeof node === 'function' && node.name === undefined)) {
-            c.write(node.toString());
+            write(node.toString());
         }
         else if (typeof node === 'function') {
-            c.write(node.name
+            write(node.name
                 ? '[Function]'
                 : '[Function: ' + node.name + ']'
             );
         }
         else {
-            c.write(node.toString());
+            write(node.toString());
         }
     }
     
     return stream;
-};
+}
