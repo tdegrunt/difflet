@@ -16,6 +16,14 @@ module.exports = function (prev, next) {
         stream.emit('end');
     });
     
+    function set (color) {
+        c.foreground(color);
+    }
+    
+    function unset () {
+        c.display('reset');
+    }
+    
     function stringify (node) {
         var inserted = this.path
             ? traverse.get(prev, this.path) === undefined
@@ -26,7 +34,7 @@ module.exports = function (prev, next) {
             var insertedElem = false;
             
             this.before(function () {
-                if (inserted) c.foreground('green');
+                if (inserted) set('green');
                 c.write('[');
             });
             
@@ -36,28 +44,28 @@ module.exports = function (prev, next) {
             
             this.after(function () {
                 c.write(']');
-                if (inserted) c.display('reset');
+                if (inserted) unset();
             });
         }
         else if (typeof node === 'object'
         && node && typeof node.inspect === 'function') {
             this.block();
-            if (inserted) c.foreground('green');
+            if (inserted) set('green');
             c.write(node.inspect());
-            if (inserted) c.display('reset');
+            if (inserted) unset();
         }
         else if (typeof node == 'object') {
             var insertedKey = false;
             
             this.before(function () {
-                if (inserted) c.foreground('green');
+                if (inserted) set('green');
                 c.write('{');
             });
             
             this.pre(function (x, key) {
                 if (traverse.get(prev, this.path.concat(key)) === undefined) {
                     insertedKey = true;
-                    c.foreground('green');
+                    set('green');
                 }
                 stringify(key);
                 c.write(':');
@@ -65,16 +73,16 @@ module.exports = function (prev, next) {
             
             this.post(function (child) {
                 if (!child.isLast) c.write(',');
-                if (insertedKey) c.display('reset');
+                if (insertedKey) unset();
             });
             
             this.after(function () {
-                if (inserted) c.display('reset');
+                if (inserted) unset();
                 c.write('}');
             });
         }
         else {
-            if (inserted) c.foreground('green');
+            if (inserted) set('green');
             
             if (typeof node === 'string') {
                 c.write('"' + node.toString().replace(/"/g, '\\"') + '"');
@@ -93,7 +101,7 @@ module.exports = function (prev, next) {
                 c.write(node.toString());
             }
             
-            if (inserted) c.display('reset');
+            if (inserted) unset();
         }
     }
     
