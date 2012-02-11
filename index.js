@@ -34,6 +34,13 @@ function difflet (opts, prev, next) {
     var commaFirst = opts.comma === 'first';
     var indent = opts.indent;
     
+    var stringify = function (node) {
+        return stringifier.call(this, true, node);
+    };
+    var plainStringify = function (node) {
+        return stringifier.call(this, false, node);
+    };
+    
     process.nextTick(function () {
         traverse(next).forEach(stringify);
         stream.emit('end');
@@ -49,9 +56,11 @@ function difflet (opts, prev, next) {
         if (--levels === 0) opts.stop(type, stream);
     }
     
-    function stringify (node) {
-        var prevNode = traverse.get(prev, this.path || []);
-        var inserted = prevNode === undefined;
+    function stringifier (insertable, node) {
+        if (insertable) {
+            var prevNode = traverse.get(prev, this.path || []);
+        }
+        var inserted = insertable && prevNode === undefined;
         
         var indentx = indent && Array(
             ((this.path || []).length + 1) * indent + 1
@@ -100,7 +109,7 @@ function difflet (opts, prev, next) {
         }
         else if (typeof node == 'object') {
             var insertedKey = false;
-            var deleted = typeof prevNode === 'object'
+            var deleted = insertable && typeof prevNode === 'object'
                 ? Object.keys(prevNode).filter(function (key) {
                     return !Object.hasOwnProperty.call(node, key);
                 })
@@ -113,10 +122,12 @@ function difflet (opts, prev, next) {
             });
             
             this.pre(function (x, key) {
-                var obj = traverse.get(prev, this.path.concat(key));
-                if (obj === undefined) {
-                    insertedKey = true;
-                    set('inserted');
+                if (insertable) {
+                    var obj = traverse.get(prev, this.path.concat(key));
+                    if (obj === undefined) {
+                        insertedKey = true;
+                        set('inserted');
+                    }
                 }
                 if (indent) write('\n' + indentx);
                 
@@ -144,7 +155,7 @@ function difflet (opts, prev, next) {
                     set('deleted');
                     deleted.forEach(function (key) {
                         plainStringify(key);
-                        write(':');
+                        write(indent ? ' : ' : ':');
                         plainStringify(prevNode[key]);
                     });
                     unset('deleted');
@@ -163,7 +174,7 @@ function difflet (opts, prev, next) {
             var changed = false;
             
             if (inserted) set('inserted');
-            else if (!deepEqual(prevNode, node)) {
+            else if (insertable && !deepEqual(prevNode, node)) {
                 changed = true;
                 set('updated');
             }
@@ -187,55 +198,6 @@ function difflet (opts, prev, next) {
             
             if (inserted) unset('inserted');
             else if (changed) unset('changed');
-        }
-    }
-    
-    function plainStringify (node) {
-        if (Array.isArray(node)) {
-            this.before(function () {
-                write('[');
-            });
-            
-            this.post(function (child) {
-                if (!child.isLast) write(',');
-            });
-            
-            this.after(function () { write(']') });
-        }
-        else if (typeof node === 'object'
-        && node && typeof node.inspect === 'function') {
-            this.block();
-            write(node.inspect());
-        }
-        else if (typeof node == 'object') {
-            this.before(function () { write('{') });
-            
-            this.pre(function (x, key) {
-                stringify(key);
-                write(':');
-            });
-            
-            this.post(function (child) {
-                if (!child.isLast) write(',');
-            });
-            
-            this.after(function () { write('}') });
-        }
-        else if (typeof node === 'string') {
-            write('"' + node.toString().replace(/"/g, '\\"') + '"');
-        }
-        else if (node instanceof RegExp
-        || (typeof node === 'function' && node.name === undefined)) {
-            write(node.toString());
-        }
-        else if (typeof node === 'function') {
-            write(node.name
-                ? '[Function]'
-                : '[Function: ' + node.name + ']'
-            );
-        }
-        else {
-            write(node.toString());
         }
     }
     
