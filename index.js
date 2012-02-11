@@ -123,7 +123,10 @@ function difflet (opts, prev, next) {
             
             this.before(function () {
                 if (inserted) set('inserted');
-                write(indent && commaFirst ? '{ ' : '{');
+                write(indent && commaFirst && !this.isRoot
+                    ? '\n' + indentx + '{ '
+                    : '{'
+                );
             });
             
             this.pre(function (x, key) {
@@ -150,6 +153,7 @@ function difflet (opts, prev, next) {
                         write(indentx + '\n, ')
                     }
                     else if (indent) write(',\n' + indentx)
+                    else write(',');
                 }
                 else {
                     if (!child.isLast) {
@@ -167,6 +171,11 @@ function difflet (opts, prev, next) {
                 if (inserted) unset('inserted');
                 
                 if (deleted.length) {
+                    if (indent && !commaFirst
+                    && Object.keys(node).length === 0) {
+                        write('\n' + indentx);
+                    }
+                    
                     set('deleted');
                     deleted.forEach(function (key, ix) {
                         plainStringify(key);

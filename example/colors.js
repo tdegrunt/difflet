@@ -1,4 +1,4 @@
-var diff = require('../')({ indent : 2 });
+var diff = require('../')({ indent : 2, comma : 'first' });
 
 function qqq () {}
 
@@ -14,6 +14,6 @@ diff(
         a : [ 1, 2, "z", /beep/, new Buffer(3) ],
         fn : 8,
         b : [5,6,7],
-        c : { x : 8, y : 9 }
+        c : { x : 8, y : 5 }
     }
 ).pipe(process.stdout, { end : false });
