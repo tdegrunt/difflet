@@ -1,4 +1,4 @@
-var diff = require('../')({ indent : 2, comma : 'first' });
+var diff = require('../')({ indent : 2 });
 
 function qqq () {}
 

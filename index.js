@@ -150,7 +150,7 @@ function difflet (opts, prev, next) {
                     insertedKey = false;
                     
                     if (indent && commaFirst) {
-                        write(indentx + '\n, ')
+                        write('\n' + indentx + ', ')
                     }
                     else if (indent) write(',\n' + indentx)
                     else write(',');
