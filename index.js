@@ -3,7 +3,7 @@ var Stream = require('stream').Stream;
 var charm = require('charm');
 var deepEqual = require('deep-equal');
 
-module.exports = function (opts_) {
+var exports = module.exports = function (opts_) {
     var fn = difflet.bind(null, opts_);
     fn.compare = function (prev, next) {
         var opts = Object.keys(opts_ || {}).reduce(function (acc, key) {
@@ -21,6 +21,10 @@ module.exports = function (opts_) {
         return data;
     };
     return fn;
+};
+
+exports.compare = function (prev, next) {
+    return exports({}).compare(prev, next);
 };
 
 function difflet (opts, prev, next) {
@@ -48,7 +52,7 @@ function difflet (opts, prev, next) {
     }
     var write = function (buf) {
         if (opts.write) opts.write(buf, stream)
-        else s.write(buf)
+        else stream.write(buf)
     };
     
     var commaFirst = opts.comma === 'first';
