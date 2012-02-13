@@ -3,16 +3,34 @@ var Stream = require('stream').Stream;
 var charm = require('charm');
 var deepEqual = require('deep-equal');
 
-module.exports = function (opts) {
-    return difflet.bind(null, opts);
+module.exports = function (opts_) {
+    var fn = difflet.bind(null, opts_);
+    fn.compare = function (prev, next) {
+        var opts = Object.keys(opts_ || {}).reduce(function (acc, key) {
+            acc[key] = opts_[key];
+            return acc;
+        }, {});
+        var s = opts.stream = new Stream;
+        var data = '';
+        s.write = function (buf) { data += buf };
+        s.end = function () {};
+        s.readable = true;
+        s.writable = true;
+        
+        difflet(opts, prev, next);
+        return data;
+    };
+    return fn;
 };
 
 function difflet (opts, prev, next) {
-    var stream = new Stream;
-    stream.readable = true;
-    stream.writable = true;
-    stream.write = function (buf) { this.emit('data', buf) };
-    stream.end = function () { this.emit('end') };
+    var stream = opts.stream || new Stream;
+    if (!opts.stream) {
+        stream.readable = true;
+        stream.writable = true;
+        stream.write = function (buf) { this.emit('data', buf) };
+        stream.end = function () { this.emit('end') };
+    }
     
     if (!opts) opts = {};
     if (opts.start === undefined && opts.stop === undefined) {
@@ -28,9 +46,11 @@ function difflet (opts, prev, next) {
             c.display('reset');
         };
     }
-    var write = opts.write || function (buf) {
-        stream.write(buf);
+    var write = function (buf) {
+        if (opts.write) opts.write(buf, stream)
+        else s.write(buf)
     };
+    
     var commaFirst = opts.comma === 'first';
     var indent = opts.indent;
     
@@ -40,11 +60,6 @@ function difflet (opts, prev, next) {
     var plainStringify = function (node) {
         return stringifier.call(this, false, node);
     };
-    
-    process.nextTick(function () {
-        traverse(next).forEach(stringify);
-        stream.emit('end');
-    });
     
     var levels = 0;
     function set (type) {
@@ -258,6 +273,14 @@ function difflet (opts, prev, next) {
             else if (changed) unset('updated');
         }
     }
+    
+    if (opts.stream) {
+        traverse(next).forEach(stringify);
+    }
+    else process.nextTick(function () {
+        traverse(next).forEach(stringify);
+        stream.emit('end');
+    });
     
     return stream;
 }
