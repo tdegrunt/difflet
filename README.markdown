@@ -6,6 +6,23 @@ Create colorful diffs for javascript objects.
 example
 =======
 
+string.js
+---------
+
+``` js
+var difflet = require('difflet');
+
+var s = difflet.compare({ a : 2, c : 5 }, { a : 3, b : 4 });
+process.stdout.write(s);
+```
+
+output:
+
+![colorful output](http://substack.net/images/screenshots/difflet_string.png)
+
+colors.js
+---------
+
 ``` js
 var diff = require('difflet')({ indent : 2 });
 
@@ -58,6 +75,17 @@ diff(prev, next)
 ----------------
 
 Return a stream with the colorful changes between objects `prev` and `next`.
+
+diff.compare(prev, next)
+------------------------
+
+Return a string with the colorful changes between `prev` and `next`.
+
+difflet.compare(prev, next)
+---------------------------
+
+Return a string with the colorful changes between `prev` and `next` with the
+default options.
 
 install
 =======
