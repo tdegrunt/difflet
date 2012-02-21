@@ -44,7 +44,9 @@ function difflet (opts, prev, next) {
                 inserted : 'green',
                 updated : 'blue',
                 deleted : 'red',
+                comment : 'cyan',
             }[type]);
+            c.display('bright');
         };
         opts.stop = function (type) {
             c.display('reset');
@@ -57,11 +59,11 @@ function difflet (opts, prev, next) {
     
     var commaFirst = opts.comma === 'first';
     
-    var stringify = function (node) {
-        return stringifier.call(this, true, node);
+    var stringify = function (node, params) {
+        return stringifier.call(this, true, node, params || opts);
     };
-    var plainStringify = function (node) {
-        return stringifier.call(this, false, node);
+    var plainStringify = function (node, params) {
+        return stringifier.call(this, false, node, params || opts);
     };
     
     var levels = 0;
@@ -74,7 +76,7 @@ function difflet (opts, prev, next) {
         if (--levels === 0) opts.stop(type, stream);
     }
     
-    function stringifier (insertable, node) {
+    function stringifier (insertable, node, opts) {
         var indent = opts.indent;
         
         if (insertable) {
@@ -219,6 +221,16 @@ function difflet (opts, prev, next) {
                     if (insertedKey) unset('inserted');
                     insertedKey = false;
                 }
+                
+                var prev = prevNode && prevNode[child.key];
+                if (opts.diff && child.node !== prev
+                && (typeof child.node !== 'object' || typeof prev !== 'object')
+                ) {
+                    set('comment');
+                    write(' // != ');
+                    plainStringify(prev, { indent : 0 });
+                    unset('comment');
+                }
             });
             
             this.after(function () {
@@ -279,6 +291,12 @@ function difflet (opts, prev, next) {
                     ? '[Function: ' + node.name + ']'
                     : '[Function]'
                 );
+            }
+            else if (node === undefined) {
+                write('undefined');
+            }
+            else if (node === null) {
+                write('null');
             }
             else {
                 write(node.toString());
