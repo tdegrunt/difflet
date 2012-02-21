@@ -90,7 +90,8 @@ function difflet (opts, prev, next) {
         if (commaFirst) indentx = indentx.slice(indent);
         
         if (Array.isArray(node)) {
-            var updated = !Array.isArray(prevNode);
+            var updated = (prevNode || traverse.has(prev, this.path))
+                && !Array.isArray(prevNode);
             if (updated) {
                 set('updated');
             }
@@ -236,6 +237,19 @@ function difflet (opts, prev, next) {
                     if (insertedKey) unset('inserted');
                     insertedKey = false;
                 }
+                
+                var prev = prevNode && prevNode[child.key];
+                if (indent && opts.comment && child.node !== prev
+                && (typeof child.node !== 'object' || typeof prev !== 'object')
+                ) {
+                    set('comment');
+                    write(' // != ');
+                    traverse(prev).forEach(function (x) {
+                        plainStringify.call(this, x, { indent : 0 });
+                    });
+                    unset('comment');
+                }
+                
             });
             
             this.after(function () {
@@ -249,6 +263,14 @@ function difflet (opts, prev, next) {
                     
                     set('deleted');
                     deleted.forEach(function (key, ix) {
+                        if (indent && opts.comment) {
+                            unset('deleted');
+                            set('comment');
+                            write('// ');
+                            unset('comment');
+                            set('deleted');
+                        }
+                        
                         plainStringify(key);
                         write(indent ? ' : ' : ':');
                         plainStringify(prevNode[key]);
