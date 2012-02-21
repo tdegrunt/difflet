@@ -273,7 +273,9 @@ function difflet (opts, prev, next) {
                         
                         plainStringify(key);
                         write(indent ? ' : ' : ':');
-                        plainStringify(prevNode[key]);
+                        traverse(prevNode[key]).forEach(function (x) {
+                            plainStringify.call(this, x, { indent : 0 });
+                        });
                         
                         var last = ix === deleted.length - 1;
                         if (insertable && !last) {
