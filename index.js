@@ -95,7 +95,7 @@ function difflet (opts, prev, next) {
                 set('updated');
             }
             
-            if (opts.diff && !Array.isArray(prevNode)) {
+            if (opts.comment && !Array.isArray(prevNode)) {
                 indent = 0;
             }
             
@@ -122,7 +122,7 @@ function difflet (opts, prev, next) {
                 }
                 
                 var prev = prevNode && prevNode[child.key];
-                if (indent && opts.diff && child.node !== prev
+                if (indent && opts.comment && child.node !== prev
                 && (typeof child.node !== 'object' || typeof prev !== 'object')
                 ) {
                     set('comment');
