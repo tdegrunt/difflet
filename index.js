@@ -217,24 +217,16 @@ function difflet (opts, prev, next) {
             });
             
             this.post(function (child) {
+                if (!child.isLast && !(indent && commaFirst)) {
+                    write(',');
+                }
+                
                 if (child.isLast && deleted.length) {
                     if (insertedKey) unset('inserted');
                     insertedKey = false;
-                    
-                    if (indent && commaFirst) {
-                        write('\n' + indentx + ', ')
-                    }
-                    else if (indent) write(',\n' + indentx)
-                    else write(',');
                 }
-                else {
-                    if (!child.isLast) {
-                        if (indent && commaFirst) {
-                            write('\n' + indentx + ', ');
-                        }
-                        else write(',');
-                    }
-                    if (insertedKey) unset('inserted');
+                else if (insertedKey) {
+                    unset('inserted');
                     insertedKey = false;
                 }
                 
@@ -250,6 +242,28 @@ function difflet (opts, prev, next) {
                     unset('comment');
                 }
                 
+                if (child.isLast && deleted.length) {
+                    if (insertedKey) unset('inserted');
+                    insertedKey = false;
+                    
+                    if (indent && commaFirst) {
+                        write('\n' + indentx + ', ')
+                    }
+                    else if (opts.comment && indent) {
+                        write('\n' + indentx);
+                    }
+                    else if (indent) {
+                        write(',\n' + indentx);
+                    }
+                    else write(',');
+                }
+                else {
+                    if (!child.isLast) {
+                        if (indent && commaFirst) {
+                            write('\n' + indentx + ', ');
+                        }
+                    }
+                }
             });
             
             this.after(function () {
