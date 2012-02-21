@@ -117,14 +117,29 @@ function difflet (opts, prev, next) {
             });
             
             this.post(function (child) {
+                if (!child.isLast && !(indent && commaFirst)) {
+                    write(',');
+                }
+                
+                var prev = prevNode && prevNode[child.key];
+                if (indent && opts.diff && child.node !== prev
+                && (typeof child.node !== 'object' || typeof prev !== 'object')
+                ) {
+                    set('comment');
+                    write(' // != ');
+                    traverse(prev).forEach(function (x) {
+                        plainStringify.call(this, x, { indent : 0 });
+                    });
+                    unset('comment');
+                }
+                
                 if (!child.isLast) {
                     if (indent && commaFirst) {
                         write('\n' + indentx + ', ');
                     }
                     else if (indent) {
-                        write(',\n' + indentx);
+                        write('\n' + indentx);
                     }
-                    else write(',');
                 }
             });
             
@@ -220,16 +235,6 @@ function difflet (opts, prev, next) {
                     }
                     if (insertedKey) unset('inserted');
                     insertedKey = false;
-                }
-                
-                var prev = prevNode && prevNode[child.key];
-                if (opts.diff && child.node !== prev
-                && (typeof child.node !== 'object' || typeof prev !== 'object')
-                ) {
-                    set('comment');
-                    write(' // != ');
-                    plainStringify(prev, { indent : 0 });
-                    unset('comment');
                 }
             });
             
