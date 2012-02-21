@@ -56,7 +56,6 @@ function difflet (opts, prev, next) {
     };
     
     var commaFirst = opts.comma === 'first';
-    var indent = opts.indent;
     
     var stringify = function (node) {
         return stringifier.call(this, true, node);
@@ -76,6 +75,8 @@ function difflet (opts, prev, next) {
     }
     
     function stringifier (insertable, node) {
+        var indent = opts.indent;
+        
         if (insertable) {
             var prevNode = traverse.get(prev, this.path || []);
         }
@@ -87,6 +88,15 @@ function difflet (opts, prev, next) {
         if (commaFirst) indentx = indentx.slice(indent);
         
         if (Array.isArray(node)) {
+            var updated = !Array.isArray(prevNode);
+            if (updated) {
+                set('updated');
+            }
+            
+            if (opts.diff && !Array.isArray(prevNode)) {
+                indent = 0;
+            }
+            
             this.before(function () {
                 if (inserted) set('inserted');
                 if (indent && commaFirst) {
@@ -121,6 +131,7 @@ function difflet (opts, prev, next) {
                 else if (indent) write('\n' + indentx.slice(indent));
                 
                 write(']');
+                if (updated) unset('updated');
                 if (inserted) unset('inserted');
             });
         }
