@@ -1,4 +1,4 @@
-var difflet = require('./');
+var difflet = require('../');
 var a = {
     x : 4,
     z : 8,
