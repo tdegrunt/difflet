@@ -71,6 +71,11 @@ spaces will be used for leading whitespace.
 
 If `opts.comma === 'first'` then commas will be placed at the start of lines.
 
+Setting `opts.comment` to `true` will turn on comments with the previous
+contents like this:
+
+![object comments](http://substack.net/images/screenshots/difflet_object_comments.png)
+
 diff(prev, next)
 ----------------
 
